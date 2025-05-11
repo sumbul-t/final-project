@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unemployment & Population</title>
+  <!-- Serve via HTTP server (e.g., python -m http.server) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 40px; }
+    .overview, .intro, .conclusion, .data-sources { margin-bottom: 40px; }
+    .controls { margin-bottom: 20px; text-align: center; }
+    .chart-container { margin-bottom: 40px; }
+    .chart { width: 100%; max-width: 800px; margin: 8px auto; }
+    label { margin-right: 8px; }
+    select { margin-right: 16px; }
+    h2.chart-title, h2.overview-title { margin-top: 0; font-size: 1.2em; text-align: center; }
+    .overview h3 { margin: 16px 0 8px; font-size: 1.1em; }
+    .description { margin-top: 8px; margin-bottom: 16px; line-height: 1.5; color: #333; }
+    .data-sources ul { list-style-type: disc; padding-left: 20px; }
+    .data-sources a { color: #1a0dab; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Unemployment & Population</h1>
+
+    <section class="overview">
+      <h2 class="overview-title">Population Growth and Unemployment in US</h2>
+      <p class="description">Over the last few years, the U.S. has seen changes in population and unemployment rates. It's important to understand these trends. This study looks at data from 2015 to 2023 on population growth and unemployment to find patterns and connections. By analyzing and visualizing this data, we hope to show how these metrics evolve and affect each other across different states.</p>
+      <h3>Problem Statement:</h3>
+      <p class="description">Population and unemployment change over time, but it's not always clear how they are connected. Do states with more people have higher unemployment rates? And do these trends vary across regions? This study examines data from 2015 to 2023 to uncover patterns and relationships between demographic growth and labor market health.</p>
+      <h3>Reason To Choose the Story:</h3>
+      <p class="description">Population and job trends shape government decisions and economic planning. Rapid population growth can strain public services, while high unemployment can undermine local economies and social well-being. Understanding these dynamics helps policymakers, businesses, and researchers make informed choices. Data visualization reveals critical insights into both demographic and economic shifts.</p>
+    </section>
+
+    <section class="intro">
+      <h2>Population Growth and Unemployment in the U.S.</h2>
+      <p class="description">This dashboard presents a multifaceted view of demographic and labor market trends across all U.S. states from 2015 through 2023. By combining population estimates with state-level unemployment rates, it allows policymakers, economists, and community leaders to explore growth patterns, identify potential socioeconomic challenges, and plan resource allocation more effectively. Interactive controls enable dynamic selection of states and years to uncover detailed insights and regional comparisons.</p>
+    </section>
+
+    <!-- Interactive Charts -->
+    <div class="controls">
+      <label for="state-select">Pie Chart: Select State</label>
+      <select id="state-select"><option value="">-- choose --</option></select>
+    </div>
+    <div class="chart-container">
+      <h2 class="chart-title">Population Distribution by Year (Pie)</h2>
+      <p class="description">The pie chart breaks down the annual population totals for the selected state, illustrating how each year contributes to the state's overall demographic share. By visually partitioning the data, stakeholders can quickly identify periods of accelerated growth, plateaus, or declines. This helps highlight the impact of economic developments, policy changes, or migration trends on a state’s population structure over time.</p>
+      <div id="piechart" class="chart"></div>
+    </div>
+
+    <div class="controls">
+      <label for="pop-year-select">Population Bar Chart: Select Year</label>
+      <select id="pop-year-select"></select>
+    </div>
+    <div class="chart-container">
+      <h2 class="chart-title">Population by State</h2>
+      <p class="description">This horizontal bar chart ranks each state by its total population in the selected year. It offers an at-a-glance comparison to identify the most and least populous states, revealing geographic concentration of residents. Such insights are essential for infrastructure planning, allocation of federal funding, and understanding demographic shifts that influence political representation.</p>
+      <div id="barPopulation" class="chart"></div>
+    </div>
+
+    <div class="controls">
+      <label for="unemp-year-select">Unemployment Bar Chart: Select Year</label>
+      <select id="unemp-year-select"></select>
+    </div>
+    <div class="chart-container">
+      <h2 class="chart-title">Top 20 States by Unemployment Rate</h2>
+      <p class="description">This bar chart highlights the twenty states with the highest unemployment rates for the chosen year. Tracking which states face elevated joblessness can guide targeted economic interventions, workforce development programs, and support services. Comparing year-to-year changes in rankings also provides insights into the effectiveness of local labor policies.</p>
+      <div id="barUnemployment" class="chart"></div>
+    </div>
+
+    <div class="chart-container">
+      <h2 class="chart-title">Heat Map: Unemployment Rate by State</h2>
+      <p class="description">The geographic heat map visualizes unemployment intensities across the U.S., with darker shades indicating higher rates. This spatial representation uncovers regional trends, helping to discern clusters of economic distress or thriving labor markets. Planners and researchers can use this view to correlate unemployment with other factors such as industrial base, urbanization, and educational attainment.</p>
+      <div id="regions_div" class="chart"></div>
+    </div>
+
+    <div class="controls">
+      <label for="trend-state-select">Trend Line Chart: Select State</label>
+      <select id="trend-state-select"><option value="">-- choose --</option></select>
+    </div>
+    <div class="chart-container">
+      <h2 class="chart-title">Population Trend for Selected State</h2>
+      <p class="description">This line chart plots year-over-year population figures for the selected state, highlighting growth trajectories and inflection points. By examining the slope and curvature of the trend line, analysts can detect sustained expansions, periods of stagnation, or downturns. This temporal view is critical for long-term planning in housing, education, and public services.</p>
+      <div id="trendChart" class="chart"></div>
+    </div>
+
+    <section class="conclusion">
+      <h2>Conclusion & Effects</h2>
+      <p class="description">Overall, U.S. population rose steadily from 2015 to 2023, while unemployment rates generally declined after the recovery period following economic disruptions. These trends underscore the need for continued investment in infrastructure, housing, and workforce training to accommodate growth and support equitable opportunity. Monitoring these indicators together aids in crafting policies that balance economic resilience with sustainable development.</p>
+    </section>
+
+    <section class="data-sources">
+      <h2>Data Sources</h2>
+      <ul>
+        <li><a href="https://data.census.gov/table/ACSST1Y2015.S0102?q=population" target="_blank">U.S. Census Bureau: Annual Population Estimates (2015–2023)</a></li>
+        <li><a href="https://www.bls.gov/charts/state-employment-and-unemployment/state-unemployment-rates-animated.htm" target="_blank">Bureau of Labor Statistics: State Unemployment Rates</a></li>
+      </ul>
+    </section>
+
+  </div>
+
+<script>
+  google.charts.load('current',{packages:['corechart','geochart']});
+  google.charts.setOnLoadCallback(init);
+
+  function init() {
+    Papa.parse(
+      'https://raw.githubusercontent.com/sumbul-t/my-data/15ee5f4c1b9a40e62ad301578715db2ab8d502bd/unemployment-population.csv',
+      {
+        header: true,
+        download: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        complete: results => {
+          const raw = results.data;
+          const years = [...new Set(raw.map(d => d.year))].sort();
+          const states = [...new Set(raw.map(d => d.state).filter(s => s))].sort();
+
+          const stateSel = document.getElementById('state-select');
+          const popYearSel = document.getElementById('pop-year-select');
+          const unempYearSel = document.getElementById('unemp-year-select');
+          const trendStateSel = document.getElementById('trend-state-select');
+
+          states.forEach(s => {
+            const o1 = document.createElement('option'); o1.value = s; o1.textContent = s;
+            stateSel.appendChild(o1);
+            const o2 = document.createElement('option'); o2.value = s; o2.textContent = s;
+            trendStateSel.appendChild(o2);
+          });
+
+          years.forEach(y => {
+            const o1 = document.createElement('option'); o1.value = y; o1.textContent = y;
+            popYearSel.appendChild(o1);
+            const o2 = document.createElement('option'); o2.value = y; o2.textContent = y;
+            unempYearSel.appendChild(o2);
+          });
+
+          if (states.length) {
+            stateSel.value = states[0]; drawPie(raw, states[0]);
+            trendStateSel.value = states[0]; drawTrend(raw, states[0]);
+          }
+          if (years.length) {
+            const last = years[years.length-1];
+            popYearSel.value = last; drawBarPopulation(raw, last);
+            unempYearSel.value = last; drawBarUnemployment(raw, last);
+            drawGeo(raw);
+          }
+
+          stateSel.onchange = () => drawPie(raw, stateSel.value);
+          popYearSel.onchange = () => drawBarPopulation(raw, +popYearSel.value);
+          unempYearSel.onchange = () => drawBarUnemployment(raw, +unempYearSel.value);
+          trendStateSel.onchange = () => drawTrend(raw, trendStateSel.value);
+        }
+      }
+    );
+  }
+
+  function drawPie(data, state) {
+    const filtered = data.filter(d => d.state === state);
+    const rows = [['Year', 'Population'], ...filtered.map(d => [String(d.year), d.population])];
+    new google.visualization.PieChart(document.getElementById('piechart'))
+            .draw(google.visualization.arrayToDataTable(rows), {
+              pieHole: 0.4,
+              pieSliceText: 'percentage',
+              width: 600,
+              height: 400
+            });
+  }
+
+  function drawBarPopulation(data, year) {
+    const yearData = data.filter(d => d.year === year).sort((a, b) => b.population - a.population);
+    const rows = [['State','Population'], ...yearData.map(d => [d.state, d.population])];
+    new google.visualization.BarChart(document.getElementById('barPopulation'))
+            .draw(google.visualization.arrayToDataTable(rows), {
+              legend: 'none',
+              hAxis: { title: 'Population' },
+              vAxis: { title: 'State' },
+              orientation: 'horizontal',
+              annotations: { alwaysOutside: true },
+              width: 700,
+              height: 500
+            });
+  }
+
+  function drawBarUnemployment(data, year) {
+    const yearData = data.filter(d => d.year === year)
+            .sort((a, b) => getRate(b) - getRate(a))
+            .slice(0, 20);
+    const rows = [['State','Unemployment Rate'], ...yearData.map(d => [d.state, getRate(d)])];
+    new google.visualization.BarChart(document.getElementById('barUnemployment'))
+            .draw(google.visualization.arrayToDataTable(rows), {
+              legend: 'none',
+              hAxis: { title: 'Rate (%)' },
+              vAxis: { title: 'State' },
+              orientation: 'horizontal',
+              annotations: { alwaysOutside: true },
+              width: 700,
+              height: 500
+            });
+  }
+
+  function drawGeo(data) {
+    const latest = Math.max(...data.map(d => d.year));
+    const yearData = data.filter(d => d.year === latest);
+    const rows = [['State','Unemployment Rate'], ...yearData.map(d => [d.state, getRate(d)])];
+    new google.visualization.GeoChart(document.getElementById('regions_div'))
+            .draw(google.visualization.arrayToDataTable(rows), {
+              region: 'US',
+              displayMode: 'regions',
+              resolution: 'provinces',
+              width: 800,
+              height: 500
+            });
+  }
+
+  function drawTrend(data, state) {
+    const filtered = data.filter(d => d.state === state).sort((a,b) => a.year - b.year);
+    const rows = [['Year','Population'], ...filtered.map(d => [d.year, d.population])];
+    new google.visualization.LineChart(document.getElementById('trendChart'))
+            .draw(google.visualization.arrayToDataTable(rows), {
+              curveType: 'function',
+              legend: { position: 'none' },
+              hAxis: { title: 'Year' },
+              vAxis: { title: 'Population' },
+              pointSize: 5,
+              annotations: { alwaysOutside: true },
+              width: 700,
+              height: 400
+            });
+  }
+
+  function getRate(d) {
+    return d['unemployment rates'] || d.unemployment_rate;
+  }
+</script>
+
+</body>
+</html>

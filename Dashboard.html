@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unemployment & Population Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      grid-auto-rows: auto;
+      gap: 1rem;
+      padding: 1rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+    .controls {
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+    .controls label {
+      margin-right: 0.5rem;
+      font-weight: bold;
+    }
+    .controls select {
+      padding: 0.25rem;
+    }
+    .chart {
+      flex-grow: 1;
+      min-height: 300px;
+    }
+    @media (max-width: 600px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>US Population & Unemployment Dashboard</h1>
+  </header>
+
+  <div class="dashboard">
+    <!-- 1. Pie Chart Panel -->
+    <div class="panel">
+      <div class="controls">
+        <label for="state-select">Pie: State</label>
+        <select id="state-select">
+          <option value="All">All States</option>
+        </select>
+      </div>
+      <h2>1. Population Distribution by Year</h2>
+      <div id="piechart" class="chart"></div>
+    </div>
+
+    <!-- 2. Trend Line Panel -->
+    <div class="panel">
+      <div class="controls">
+        <label for="trend-state-select">Trend: State</label>
+        <select id="trend-state-select">
+          <option value="All">All States</option>
+        </select>
+      </div>
+      <h2>2. Population Trend Over Time</h2>
+      <div id="trendChart" class="chart"></div>
+    </div>
+
+    <!-- 3. Population Bar Panel -->
+    <div class="panel">
+      <div class="controls">
+        <label for="pop-year-select">Population: Year</label>
+        <select id="pop-year-select"></select>
+      </div>
+      <h2>3. Population by State</h2>
+      <div id="barPopulation" class="chart"></div>
+    </div>
+
+    <!-- 4. Unemployment Bar Panel -->
+    <div class="panel">
+      <div class="controls">
+        <label for="unemp-year-select">Unemployment: Year</label>
+        <select id="unemp-year-select"></select>
+      </div>
+      <h2>4. Top 20 States by Unemployment Rate</h2>
+      <div id="barUnemployment" class="chart"></div>
+    </div>
+
+    <!-- 5. Geo Map Panel (spans two cols) -->
+    <div class="panel" style="grid-column: span 2;">
+      <h2>5. Heat Map: Unemployment Rate by State</h2>
+      <div id="regions_div" class="chart"></div>
+    </div>
+  </div>
+
+  <script>
+    google.charts.load('current',{packages:['corechart','geochart']});
+    google.charts.setOnLoadCallback(init);
+
+    function init() {
+      Papa.parse(
+        'https://raw.githubusercontent.com/sumbul-t/my-data/15ee5f4c1b9a40e62ad301578715db2ab8d502bd/unemployment-population.csv',
+        {
+          header: true, download: true, dynamicTyping: true, skipEmptyLines: true,
+          complete: results => {
+            const raw = results.data;
+            const years = [...new Set(raw.map(d => d.year))].sort();
+            const states = [...new Set(raw.map(d => d.state).filter(s => s))].sort();
+
+            const stateSel = document.getElementById('state-select');
+            const trendSel = document.getElementById('trend-state-select');
+            const popYearSel = document.getElementById('pop-year-select');
+            const unempYearSel = document.getElementById('unemp-year-select');
+
+            // Populate state dropdowns (after the "All States" option)
+            states.forEach(s => {
+              [stateSel, trendSel].forEach(sel => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                sel.appendChild(opt);
+              });
+            });
+
+            // Populate year dropdowns
+            years.forEach(y => {
+              [popYearSel, unempYearSel].forEach(sel => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                sel.appendChild(opt);
+              });
+            });
+
+            // Initial drawing
+            stateSel.value = 'All';
+            trendSel.value = 'All';
+            drawPie(raw, 'All');
+            drawTrend(raw, 'All');
+
+            const lastYear = years[years.length - 1];
+            popYearSel.value = lastYear;
+            unempYearSel.value = lastYear;
+            drawBarPopulation(raw, lastYear);
+            drawBarUnemployment(raw, lastYear);
+            drawGeo(raw);
+
+            // Event handlers
+            stateSel.onchange = () => drawPie(raw, stateSel.value);
+            trendSel.onchange = () => drawTrend(raw, trendSel.value);
+            popYearSel.onchange = () => drawBarPopulation(raw, +popYearSel.value);
+            unempYearSel.onchange = () => drawBarUnemployment(raw, +unempYearSel.value);
+          }
+        }
+      );
+    }
+
+    function drawPie(data, state) {
+      let rows;
+      if (state === 'All') {
+        // sum population per year across all states
+        const sums = {};
+        data.forEach(d => { sums[d.year] = (sums[d.year]||0) + d.population; });
+        rows = [['Year','Population'], ...Object.entries(sums)
+          .sort((a,b)=>a[0]-b[0])
+          .map(([y,p])=>[String(y), p])];
+      } else {
+        rows = [['Year','Population'], ...data
+          .filter(d => d.state === state)
+          .map(d => [String(d.year), d.population])];
+      }
+      new google.visualization.PieChart(
+        document.getElementById('piechart')
+      ).draw(
+        google.visualization.arrayToDataTable(rows),
+        { pieHole: 0.4, pieSliceText: 'percentage', width:'100%', height:300 }
+      );
+    }
+
+    function drawTrend(data, state) {
+      let rows;
+      if (state === 'All') {
+        // aggregate total US population trend
+        const sums = {};
+        data.forEach(d => { sums[d.year] = (sums[d.year]||0) + d.population; });
+        rows = [['Year','Population'], ...Object.entries(sums)
+          .sort((a,b)=>a[0]-b[0])
+          .map(([y,p])=>[+y, p])];
+      } else {
+        rows = [['Year','Population'], ...data
+          .filter(d => d.state === state)
+          .sort((a,b)=>a.year-b.year)
+          .map(d=>[d.year,d.population])];
+      }
+      new google.visualization.LineChart(
+        document.getElementById('trendChart')
+      ).draw(
+        google.visualization.arrayToDataTable(rows),
+        { curveType:'function', legend:{position:'none'}, hAxis:{title:'Year'}, vAxis:{title:'Population'}, pointSize:4, width:'100%', height:300 }
+      );
+    }
+
+    function drawBarPopulation(data, year) {
+      const rows = [['State','Population'], ...data
+        .filter(d => d.year === year)
+        .sort((a,b)=>b.population-a.population)
+        .map(d=>[d.state,d.population])];
+      new google.visualization.BarChart(
+        document.getElementById('barPopulation')
+      ).draw(
+        google.visualization.arrayToDataTable(rows),
+        { legend:'none', hAxis:{title:'Population'}, vAxis:{title:'State'}, orientation:'horizontal', annotations:{alwaysOutside:true}, width:'100%', height:300 }
+      );
+    }
+
+    function drawBarUnemployment(data, year) {
+      const getRate = d => d['unemployment rates'] ?? d.unemployment_rate;
+      const rows = [['State','Unemployment Rate'], ...data
+        .filter(d => d.year === year)
+        .sort((a,b)=>getRate(b)-getRate(a))
+        .slice(0,20)
+        .map(d=>[d.state, getRate(d)])];
+      new google.visualization.BarChart(
+        document.getElementById('barUnemployment')
+      ).draw(
+        google.visualization.arrayToDataTable(rows),
+        { legend:'none', hAxis:{title:'Rate (%)'}, vAxis:{title:'State'}, orientation:'horizontal', annotations:{alwaysOutside:true}, width:'100%', height:300 }
+      );
+    }
+
+    function drawGeo(data) {
+      const getRate = d => d['unemployment rates'] ?? d.unemployment_rate;
+      const latest = Math.max(...data.map(d=>d.year));
+      const rows = [['State','Unemployment Rate'], ...data
+        .filter(d=>d.year===latest)
+        .map(d=>[d.state,getRate(d)])];
+      new google.visualization.GeoChart(
+        document.getElementById('regions_div')
+      ).draw(
+        google.visualization.arrayToDataTable(rows),
+        { region:'US', displayMode:'regions', resolution:'provinces', width:'100%', height:400 }
+      );
+    }
+  </script>
+</body>
+</html>
